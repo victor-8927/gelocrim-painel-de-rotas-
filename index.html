@@ -1092,6 +1092,14 @@ function renderTable(){
         ${recomputePeso(c).toLocaleString('pt-BR')} kg
         ${!usingSacos ? `<div style="font-size:10px;color:var(--ink-dim);">sem pedido (histórico: ${c.peso_atual.toLocaleString('pt-BR')}kg)</div>` : ''}
       </td>
+      <td style="text-align:center;">
+        <input type="number" min="1" max="999" step="1"
+          value="${Math.round((c.svc_h||0.333)*60)}"
+          title="Tempo médio de atendimento em minutos"
+          onchange="updateSvcH('${c.uid}',this.value)"
+          style="width:52px;text-align:center;font-family:var(--mono);font-size:12px;padding:2px 4px;border:1px solid var(--line);border-radius:4px;background:var(--surface);">
+        <div style="font-size:10px;color:var(--ink-dim);margin-top:1px;">min</div>
+      </td>
       <td>${gpsCell}</td>
       <td><select class="route-select" onchange="updateRoute('${c.uid}',this.value)">${routeOpts}</select></td>
       <td><select class="day-select" onchange="updateDay('${c.uid}',this.value)">${dayOpts}</select></td>
@@ -1111,7 +1119,7 @@ function renderTable(){
     ${semCoordCount>0 ? `<div class="note err">${semCoordCount} cliente(s) desta rota/dia sem coordenadas GPS (linha destacada) — preencha lat/lon direto na tabela ou clique em "📍 marcar no mapa" e depois clique no ponto certo no mapa. Só depois disso entram no cálculo de rota/custo.</div>` : ''}
     ${manualTripAssignment[key] && Object.keys(manualTripAssignment[key]).length>0 ? `<div class="note" style="background:var(--amber-bg);border-left-color:var(--amber);">Você tem atribuições manuais de viagem nesta rota/dia (coluna "Viagem" na tabela). <button class="btn-secondary" style="width:auto;padding:3px 8px;font-size:11px;" onclick="clearManualTrips('${key}')">Limpar e voltar ao agrupamento automático</button></div>` : ''}
     <table style="${override?'opacity:0.55;':''}">
-      <thead><tr><th>Cliente</th><th>Sacos (pedido real)</th><th>Peso/visita</th><th>GPS</th><th>Rota</th><th>Dia</th><th>Viagem</th><th></th></tr></thead>
+      <thead><tr><th>Cliente</th><th>Sacos (pedido real)</th><th>Peso/visita</th><th>Tempo atend.</th><th>GPS</th><th>Rota</th><th>Dia</th><th>Viagem</th><th></th></tr></thead>
       <tbody>${rows || '<tr><td colspan="8" style="color:var(--ink-dim);text-align:center;padding:20px;">Nenhum cliente nesta rota/dia.</td></tr>'}</tbody>
     </table>
     <div class="add-client-row">
@@ -1386,6 +1394,15 @@ function updateSacoQty(uid, size, val){
 
 function updatePeso(uid, val){
   const c = CLIENTS.find(c=>c.uid===uid); if(c){ c.peso_kg = parseFloat(val)||0; markDirty(); }
+}
+function updateSvcH(uid, val){
+  const c = CLIENTS.find(c=>c.uid===uid);
+  if(c){
+    const mins = Math.max(1, parseInt(val)||20);
+    c.svc_h = mins / 60;
+    markDirty();
+    renderAll(); // recalcula rotas com novo tempo
+  }
 }
 function updateCodigoErp(uid, val){
   const c = CLIENTS.find(c=>c.uid===uid);
